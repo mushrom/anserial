@@ -1,21 +1,4 @@
-/* A serializer for storing s-expression-like data structures.
- * building: c++ -o serial serial.cpp -Wall -O2
- *
- * FEATURES:
- * - pretty fast, simple format. Optimized for generation/parsing speed.
- * - each entry being 8 bytes and referring to only the parent
- *   means you can stop reading after any 8-byte segment and have a valid
- *   tree
- * CAVEATS:
- * - symbols are stored as 32-bit hashes, collisions are inevitable eventually
- * - not very space efficient, always uses 8 bytes even just to store a 4-byte int.
- * - strings are especially inefficient, using an int entry for each character, which means
- *   about 7 bytes of wasted space per character. I sleep.
- * - 30 bits for parent IDs means there's an implicit limit of 8GB for generated
- *   output (~1 billion entries * 8 bytes).
- * LICENSE: MIT (2019)
- */
-
+#include <anserial/anserial.hpp>
 #include <list>
 #include <vector>
 #include <map>
@@ -28,47 +11,6 @@
 
 namespace anserial {
 
-// semantic versioning, just in case
-struct { uint32_t major, minor, patch; } version = {0, 0, 1};
-
-// type information
-// note that this only uses 2 bits of information - used
-// for tagging the serialized data
-enum {
-	ENT_TYPE_CONTAINER,
-	ENT_TYPE_SYMBOL,
-	ENT_TYPE_INTEGER,
-	ENT_TYPE_STRING,
-};
-
-class s_ent {
-	public:
-		// entity ID number
-		uint32_t id;
-		// parent container ID
-		uint32_t parent;
-		// data buffer, always 4 bytes
-		uint32_t data;
-		// data type
-		uint32_t d_type;
-};
-
-class s_node {
-	public:
-		~s_node() {
-			for (auto& x : entities) {
-				// self-recursive parents are allowed so we need to check for that here
-				if (x != this) {
-					delete x;
-				}
-			}
-		}
-
-		std::list<s_node*> entities;
-		s_ent self;
-};
-
-typedef struct { uint32_t datas[2]; } serialized;
 serialized serialize_ent(const s_ent& ent) {
 	serialized ret;
 
@@ -87,65 +29,6 @@ s_ent deserialize_ent(const serialized& ser) {
 
 	return ret;
 }
-
-class serializer {
-	public:
-		std::vector<uint32_t> output;
-		std::map<uint32_t, std::string> symtab;
-
-		// last assigned entity ID
-		uint32_t ent_counter = 0;
-
-		// primitives for adding to the tree
-		uint32_t add_ent(uint32_t type, uint32_t parent, uint32_t data);
-		uint32_t add_container(uint32_t parent);
-		uint32_t add_symbol(uint32_t parent, const std::string& symbol);
-		uint32_t add_symbol(uint32_t parent, uint32_t symbol);
-		uint32_t add_integer(uint32_t parent, uint32_t data);
-		uint32_t add_string(uint32_t parent, const std::string& str);
-
-		// convenience functions
-		uint32_t add_version(uint32_t parent);
-		uint32_t add_symtab(uint32_t parent);
-
-		// TODO: add a serialize() call to return data incrementally over multiple calls
-		// TODO: output callback function, so we can write data as it's being serialized
-		//       without buffering the full output
-		std::vector<uint32_t> serialize() { return output; };
-
-		// allows for neat ergonomic syntax, but a bit slower
-		class ent_int {
-			public:
-				ent_int(uint32_t i);
-				ent_int(std::string str);
-				ent_int(const char* str);
-				ent_int(std::list<ent_int> ents);
-				ent_int(std::initializer_list<ent_int> ents);
-
-				uint32_t id;
-				uint32_t d_type;
-
-				struct {
-					uint32_t i;
-					std::string s_str;
-					std::initializer_list<ent_int> ents;
-				} datas;
-		};
-
-		uint32_t add_entities(uint32_t parent, ent_int);
-};
-
-class deserializer {
-	public:
-		// used for decoding
-		std::vector<s_node*> nodes;
-
-		// last assigned entity ID
-		uint32_t ent_counter = 0;
-
-		s_node *deserialize(uint32_t *datas, size_t entities);
-		s_node *deserialize(std::vector<uint32_t> datas);
-};
 
 s_node *deserializer::deserialize(uint32_t *datas, size_t entities) {
 	for (unsigned i = 0; i < entities; i++) {
