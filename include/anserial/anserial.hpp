@@ -1,4 +1,5 @@
 #pragma once
+#include <anserial/version.hpp>
 #include <stdint.h>
 #include <list>
 #include <vector>
@@ -7,9 +8,6 @@
 namespace anserial {
 
 typedef struct { uint32_t datas[2]; } serialized;
-
-// semantic versioning, just in case
-struct { uint32_t major, minor, patch; } version = {0, 0, 1};
 
 // type information
 // note that this only uses 2 bits of information - used
