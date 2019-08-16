@@ -9,7 +9,9 @@ all: dirtree libs bin tests
 .PHONY: test
 
 .PHONY: dirtree
-dirtree:
+dirtree: $(BUILD)
+
+$(BUILD):
 	mkdir -p $(BUILD)/{bin,lib,obj,test}
 
 .PHONY: tests
@@ -22,11 +24,13 @@ bin: $(BUILD)/bin/anserial
 .PHONY: libs
 libs: $(BUILD)/lib/anserial.a
 
+$(OBJ): $(BUILD)
+
 $(BUILD)/bin/anserial: $(OBJ)
 	$(CXX) $(CXXFLAGS) $(OBJ) -o $@
 
 $(BUILD)/lib/anserial.a: $(OBJ)
-	$(CXX) $(CXXFLAGS) $(OBJ) -o $@
+	ar rvs $@ $(OBJ)
 
 .PHONY: clean
 clean:
