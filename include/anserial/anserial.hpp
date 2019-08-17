@@ -105,6 +105,8 @@ class deserializer {
 		s_node *deserialize(std::vector<uint32_t> datas);
 };
 
+// XXX
+void dump_nodes(s_node *node, unsigned indent);
 
 // namespace anserial
 }
