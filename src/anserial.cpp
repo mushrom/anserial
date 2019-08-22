@@ -5,6 +5,7 @@
 #include <initializer_list>
 #include <stdint.h>
 #include <stdexcept>
+#include <iostream>
 
 // for htonl/ntohl
 #include <arpa/inet.h>
@@ -14,7 +15,7 @@ namespace anserial {
 serialized serialize_ent(const s_ent& ent) {
 	serialized ret;
 
-	ret.datas[0] = htonl((ent.d_type << 30) | ent.parent);
+	ret.datas[0] = htonl((ent.d_type << 29) | ent.parent);
 	ret.datas[1] = htonl(ent.data);
 
 	return ret;
@@ -23,11 +24,22 @@ serialized serialize_ent(const s_ent& ent) {
 s_ent deserialize_ent(const serialized& ser) {
 	s_ent ret;
 
-	ret.d_type = ntohl(ser.datas[0]) >> 30;
-	ret.parent = ntohl(ser.datas[0]) & ~(3 << 30);
+	ret.d_type = ntohl(ser.datas[0]) >> 29;
+	ret.parent = ntohl(ser.datas[0]) & ~(7 << 29);
 	ret.data   = ntohl(ser.datas[1]);
 
 	return ret;
+}
+
+// TODO: move this somewhere better
+uint32_t hash_string(const std::string& str) {
+	unsigned hash = 19937;
+
+	for (char c : str) {
+		hash = (hash << 7) + hash + c;
+	}
+
+	return hash;
 }
 
 s_node *deserializer::deserialize(uint32_t *datas, size_t entities) {
@@ -36,8 +48,18 @@ s_node *deserializer::deserialize(uint32_t *datas, size_t entities) {
 		buf.datas[0] = datas[2*i];
 		buf.datas[1] = datas[2*i + 1];
 
-		s_node *temp = new s_node;
 		s_ent entity = deserialize_ent(buf);
+		s_node *temp;
+
+		switch (entity.d_type) {
+			case ENT_TYPE_CONTAINER: temp = new s_container; break;
+			case ENT_TYPE_MAP:       temp = new s_map; break;
+			case ENT_TYPE_STRING:    temp = new s_string; break;
+			case ENT_TYPE_SYMBOL:    temp = new s_symbol; break;
+			case ENT_TYPE_INTEGER:   temp = new s_uint; break;
+
+			default: temp = new s_node; break;
+		}
 
 		if (entity.parent > ent_counter) {
 			throw std::out_of_range("deserializer::deserialize(): parent ID is invalid");
@@ -49,7 +71,8 @@ s_node *deserializer::deserialize(uint32_t *datas, size_t entities) {
 		nodes.push_back(temp);
 
 		// link node up to parent node
-		nodes[temp->self.parent]->entities.push_back(temp);
+		//nodes[temp->self.parent]->entities.push_back(temp);
+		nodes[temp->self.parent]->link_ent(temp);
 	}
 
 	return nodes[0];
@@ -124,16 +147,6 @@ uint32_t serializer::add_ent(uint32_t type, uint32_t parent, uint32_t data) {
 	return ret;
 }
 
-uint32_t hash_string(const std::string& str) {
-	unsigned hash = 19937;
-
-	for (char c : str) {
-		hash = (hash << 7) + hash + c;
-	}
-
-	return hash;
-}
-
 uint32_t serializer::add_container(uint32_t parent) {
 	return add_ent(ENT_TYPE_CONTAINER, parent, 0);
 }
@@ -170,6 +183,18 @@ uint32_t serializer::add_string(uint32_t parent, const std::string& str) {
 	return ret;
 }
 
+uint32_t serializer::add_map(uint32_t parent) {
+	return add_ent(ENT_TYPE_MAP, parent, 0xcafebabe);
+}
+
+uint32_t serializer::add_map_entry(uint32_t parent,
+                                   const std::string& symbol,
+                                   ent_int things)
+{
+	add_symbol(parent, symbol);
+	return add_entities(parent, things);
+}
+
 uint32_t serializer::add_version(uint32_t parent) {
 	return add_entities(parent,
 		{"::version",
@@ -179,14 +204,14 @@ uint32_t serializer::add_version(uint32_t parent) {
 }
 
 uint32_t serializer::add_symtab(uint32_t parent) {
-	uint32_t cont = add_container(parent);
-
-	add_symbol(cont, "::symtab");
+	// assumes the parent is a map itself
+	add_symbol(parent, "::symtab");
+	uint32_t cont = add_map(parent);
 
 	for (const auto& x : symtab) {
-		uint32_t entry = add_container(cont);
-		add_symbol(entry, x.first);
-		add_string(entry, x.second);
+		//uint32_t entry = add_container(cont);
+		add_symbol(cont, x.first);
+		add_string(cont, x.second);
 	}
 
 	return cont;
@@ -194,38 +219,54 @@ uint32_t serializer::add_symtab(uint32_t parent) {
 
 // TODO: make this part of s_node/s_tree classes
 void dump_nodes(s_node *node, unsigned indent) {
-	const char *types[] = {"container", "symbol", "integer", "string"};
-	printf("%*s(%s", 4*indent, " ", types[node->self.d_type]);
+	if (!node) {
+		printf("#<nullptr>");
+		return;
+	}
+
+	const char *types[] = {
+		"container", "symbol", "integer", "string",
+		"map", "set", "null"
+	};
+
+	//printf("%*s(%s", 4*indent, " ", types[node->self.d_type]);
+	printf("%*s", 4*indent, " ");
 
 	switch (node->self.d_type) {
 		case ENT_TYPE_CONTAINER:
+			printf("(container");
+			for (auto& x : node->entities()) {
+				if (x->self.id != node->self.id) {
+					putchar('\n');
+					dump_nodes(x, indent + 1);
+				}
+			}
+			putchar(')');
+
+			break;
+
+		case ENT_TYPE_MAP:
+			printf("(map");
+			for (auto& x : node->keys()) {
+				putchar('\n');
+				dump_nodes(x, indent + 1);
+				dump_nodes(node->get(x->uint()), indent + 1);
+			}
+
 			break;
 
 		case ENT_TYPE_STRING:
-			printf(" ; \"");
-			for (const auto& x : node->entities) {
-				putchar(x->self.data);
-			}
-			putchar('"');
+			std::cout << '"' << node->string() << '"';
 			break;
 
 		case ENT_TYPE_SYMBOL:
-			printf(" #x%x", node->self.data);
+			printf("#<symbol:#x%x>", node->uint());
 			break;
 
 		case ENT_TYPE_INTEGER:
-			printf(" %u", node->self.data);
+			printf("%u", node->uint());
 			break;
 	}
-
-	for (auto& x : node->entities) {
-		if (x->self.id != node->self.id) {
-			putchar('\n');
-			dump_nodes(x, indent + 1);
-		}
-	}
-
-	putchar(')');
 
 	if (indent == 0) {
 		putchar('\n');
