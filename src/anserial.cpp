@@ -196,11 +196,15 @@ uint32_t serializer::add_map_entry(uint32_t parent,
 }
 
 uint32_t serializer::add_version(uint32_t parent) {
-	return add_entities(parent,
-		{"::version",
-			{"major", version.major},
-			{"minor", version.minor},
-			{"patch", version.patch}});;
+	return add_map_entry(parent, "::version", {
+		{"major", version.major},
+		{"minor", version.minor},
+		{"patch", version.patch}
+	});
+}
+
+uint32_t serializer::add_data(uint32_t parent) {
+	return add_map_entry(parent, "::data", {});
 }
 
 uint32_t serializer::add_symtab(uint32_t parent) {
@@ -215,6 +219,12 @@ uint32_t serializer::add_symtab(uint32_t parent) {
 	}
 
 	return cont;
+}
+
+uint32_t serializer::default_layout() {
+	uint32_t top = add_map(0);
+	add_version(top);
+	return add_data(top);
 }
 
 // TODO: make this part of s_node/s_tree classes
@@ -249,6 +259,7 @@ void dump_nodes(s_node *node, unsigned indent) {
 			printf("(map");
 			for (auto& x : node->keys()) {
 				putchar('\n');
+
 				dump_nodes(x, indent + 1);
 				dump_nodes(node->get(x->uint()), indent + 1);
 			}

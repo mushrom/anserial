@@ -5,9 +5,13 @@ using namespace anserial;
 int main(int argc, char *argv[]) {
 	serializer foo;
 
+	/*
 	// add empty container at the top level
 	uint32_t top = foo.add_container(0);
 	foo.add_version(top);
+	*/
+
+	uint32_t top = foo.default_layout();
 
 	uint32_t counting = foo.add_entities(top, {});
 	for (unsigned i = 0; i < 10000; i++) {

@@ -5,6 +5,7 @@
 #include <list>
 #include <vector>
 #include <map>
+#include <stdexcept>
 
 namespace anserial {
 
@@ -54,10 +55,21 @@ class s_node {
 		// on a base node, there are no valid ways to access data. subclasses
 		// of this will override these functions to provide ways to access data,
 		// so we get runtime type checking without too much overhead.
-		virtual s_node* get(uint32_t index){ throw "something"; };
-		virtual s_node* get(std::string& symbol){ throw "something"; };
-		virtual std::string& string(){ throw "something"; };
-		virtual uint32_t uint(){ throw "something"; };
+		virtual s_node* get(uint32_t index){
+			throw std::logic_error("anserial: no get(int) method for type " + type());
+		};
+
+		virtual s_node* get(std::string& symbol){
+			throw std::logic_error("anserial: no get(symbol) method for type " + type());
+		};
+
+		virtual std::string& string(){
+			throw std::logic_error("anserial: no string() method for type " + type());
+		};
+
+		virtual uint32_t uint(){
+			throw std::logic_error("anserial: no uint() method for type " + type());
+		};
 
 		// returns a vector reference with the list of contained entities
 		virtual std::vector<s_node*>& entities() {
@@ -71,6 +83,15 @@ class s_node {
 		virtual std::vector<s_node*>& keys() {
 			static std::vector<s_node*> void_vec = {};
 			return void_vec;
+		}
+
+		const std::string& type(void) {
+			static const std::string types[] = {
+				"container", "symbol", "integer", "string",
+				"map", "set", "null",
+			};
+
+			return types[self.d_type];
 		}
 
 		// raw deserialized entity
@@ -127,9 +148,19 @@ class s_map : public s_node {
 		}
 
 		virtual void link_ent(s_node* ent) {
-			if (entries.size() % 2 == 0) {
+			// XXX: for now, don't link to self, not sure what to do
+			//      when a map is the top-level entity since the first added
+			//      entry will be itself.
+			// TODO: fix this
+			if (ent == this) {
+				return;
+			}
+
+			if (!have_sym) {
 				// even links are keys for map entries
 				last_sym = ent->self.data;
+				have_sym = true;
+
 				// TODO: it might be a good idea to set this to a null entity
 				//       of some type
 				// TODO: check that we actually have a symbol
@@ -140,6 +171,7 @@ class s_map : public s_node {
 			else {
 				entries[last_sym] = ent;
 				ents.push_back(ent);
+				have_sym = false;
 			}
 		}
 
@@ -153,7 +185,12 @@ class s_map : public s_node {
 			return ent_keys;
 		}
 
+		// state for link_ent()
 		uint32_t last_sym = 0;
+		// link_ent expects the first call to be a symbol entry,
+		// and the second to be the map entry.
+		// this keeps track of the current state.
+		bool have_sym = false;
 
 		// keep seperate vectors for keys/entries, for efficiency
 		std::vector<s_node*> ent_keys;
@@ -217,6 +254,12 @@ class serializer {
 		// convenience functions
 		uint32_t add_version(uint32_t parent);
 		uint32_t add_symtab(uint32_t parent);
+		uint32_t add_data(uint32_t parent);
+
+		// initializes an empty serializer to the default object layout,
+		// with a top-level map and ::-prefixed metadata.
+		// (eg. ::version, ::data, etc)
+		uint32_t default_layout();
 
 		// TODO: add a serialize() call to return data incrementally over multiple calls
 		// TODO: output callback function, so we can write data as it's being serialized
