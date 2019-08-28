@@ -2,14 +2,8 @@
 
 using namespace anserial;
 
-int main(int argc, char *argv[]) {
+void gen_test_data(void) {
 	serializer foo;
-
-	/*
-	// add empty container at the top level
-	uint32_t top = foo.add_container(0);
-	foo.add_version(top);
-	*/
 
 	uint32_t top = foo.default_layout();
 
@@ -40,20 +34,55 @@ int main(int argc, char *argv[]) {
 	foo.add_symtab(0);
 
 	auto buf = foo.serialize();
+	fwrite(buf.data(), 4, buf.size(), stdout);
+}
 
+void decode_dump(void) {
+	deserializer der;
+
+	uint32_t buf[1024];
+	size_t nred = 0;
+
+	while ((nred = fread(buf, 8, 512, stdin)) > 0) {
+		der.deserialize(buf, nred);
+	}
+
+	s_tree foo(&der);
+	foo.dump_nodes();
+}
+
+void print_help(void) {
+	puts(
+		" -h : print this help and exit\n"
+		" -d : decode and dump serialized data from stdin\n"
+		" -e : serialize s-expressions from stdin"
+		" -t : generate some test data"
+	);
+}
+
+int main(int argc, char *argv[]) {
 	if (argc > 1) {
-		/*
-		deserializer der;
-		auto foo = der.deserialize(buf);
-		dump_nodes(foo, 0);
-		delete foo;
-		*/
-		deserializer der(buf);
-		s_tree foo(&der);
-		foo.dump_nodes();
-
+		switch (argv[1][1]) {
+			case 'h':
+				print_help();
+				return 0;
+			case 'd':
+				decode_dump();
+				return 0;
+			case 'e':
+				puts("TODO: not implemented");
+				return 1;
+			case 't':
+				gen_test_data();
+				return 0;
+			default:
+				puts("invalid option!");
+				print_help();
+				return 1;
+		}
 	} else {
-		fwrite(buf.data(), 4, buf.size(), stdout);
+		print_help();
+		return 0;
 	}
 
 	return 0;
