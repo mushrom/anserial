@@ -8,6 +8,7 @@
 #include <anserial/serializer.hpp>
 #include <anserial/deserializer.hpp>
 #include <anserial/s_node.hpp>
+#include <anserial/s_tree.hpp>
 
 namespace anserial {
 

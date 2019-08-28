@@ -29,6 +29,13 @@ class s_node {
 			throw std::logic_error("anserial: no get(symbol) method for type " + type());
 		};
 
+		// XXX: would be more efficient to go the other way,
+		//      symbol -> C string...
+		virtual s_node* get(const char* symbol) {
+			std::string temp(symbol);
+			return get(temp);
+		};
+
 		virtual std::string& string(){
 			throw std::logic_error("anserial: no string() method for type " + type());
 		};

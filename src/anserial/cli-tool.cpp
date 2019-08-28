@@ -37,15 +37,20 @@ int main(int argc, char *argv[]) {
 		*/
 	}
 
-	foo.add_symtab(top);
+	foo.add_symtab(0);
 
 	auto buf = foo.serialize();
 
 	if (argc > 1) {
+		/*
 		deserializer der;
 		auto foo = der.deserialize(buf);
 		dump_nodes(foo, 0);
 		delete foo;
+		*/
+		deserializer der(buf);
+		s_tree foo(&der);
+		foo.dump_nodes();
 
 	} else {
 		fwrite(buf.data(), 4, buf.size(), stdout);
