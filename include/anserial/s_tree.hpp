@@ -8,6 +8,8 @@ namespace anserial {
 class s_tree {
 	public:
 		// TODO: smarter pointers
+		s_tree();
+		s_tree(s_node *node);
 		s_tree(deserializer* nder);
 
 		s_node *lookup(std::string& symbol);
@@ -21,16 +23,16 @@ class s_tree {
 
 	private:
 		// TODO: should use a smart pointer here
-		deserializer* der;
+		deserializer *der = nullptr;
 
 		// top-level node
-		s_node *top;
+		s_node *top = nullptr;
 		// map node with symbol info
-		s_node *symtab;
+		s_node *symtab = nullptr;
 		// generator version
-		s_node *version;
+		s_node *version = nullptr;
 		// main content
-		s_node *data;
+		s_node *data = nullptr;
 };
 
 // namespace anserial

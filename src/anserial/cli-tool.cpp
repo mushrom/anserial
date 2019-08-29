@@ -1,4 +1,5 @@
 #include <anserial/anserial.hpp>
+#include <anserial/parser.hpp>
 
 using namespace anserial;
 
@@ -70,7 +71,11 @@ int main(int argc, char *argv[]) {
 				decode_dump();
 				return 0;
 			case 'e':
-				puts("TODO: not implemented");
+				{
+					sexp_parser parser(stdin);
+					s_tree foo = parser.parse();
+					foo.dump_nodes();
+				}
 				return 1;
 			case 't':
 				gen_test_data();

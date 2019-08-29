@@ -3,6 +3,15 @@
 
 using namespace anserial;
 
+s_tree::s_tree() {
+
+}
+
+s_tree::s_tree(s_node *node) {
+	top = node;
+	refresh();
+}
+
 s_tree::s_tree(deserializer* nder) {
 	der = nder;
 	refresh();
@@ -21,7 +30,9 @@ s_node *s_tree::lookup(uint32_t hash) {
 }
 
 void s_tree::refresh(void) {
-	top = der->deserialize();
+	if (!top && der) {
+		top = der->deserialize();
+	}
 
 	if (top && top->self.d_type == ENT_TYPE_MAP) {
 		symtab = top->get("::symtab");
@@ -48,9 +59,11 @@ void s_tree::dump_nodes(s_node *node, unsigned indent) {
 	//printf("%*s(%s", 4*indent, " ", types[node->self.d_type]);
 	printf("%*s", 4*indent, " ");
 
+	// TODO: we should use the node type here, rather than the
+	//       type from the raw deserialized entity...
 	switch (node->self.d_type) {
 		case ENT_TYPE_CONTAINER:
-			printf("(container");
+			printf("(");
 			for (auto& x : node->entities()) {
 				if (x->self.id != node->self.id) {
 					putchar('\n');
@@ -81,8 +94,14 @@ void s_tree::dump_nodes(s_node *node, unsigned indent) {
 			{
 				s_node *str = lookup(node->uint());
 
-				if (str) std::cout << str->string() << ' ';
-				else     printf("#<symbol:#x%x>", node->uint());
+				if (str) {
+					std::cout << str->string() << ' ';
+
+				} else {
+					printf("#<symbol:#x%x>", node->uint());
+
+				}
+				//printf("#<symbol:#x%x>", node->uint());
 			}
 			break;
 
