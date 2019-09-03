@@ -25,16 +25,19 @@ class s_node {
 			throw std::logic_error("anserial: no get(int) method for type " + type());
 		};
 
-		virtual s_node* get(std::string& symbol){
+		virtual s_node* get(const std::string& symbol){
 			throw std::logic_error("anserial: no get(symbol) method for type " + type());
 		};
 
+		/*
 		// XXX: would be more efficient to go the other way,
 		//      symbol -> C string...
+		// TODO: do we really need this?
 		virtual s_node* get(const char* symbol) {
 			std::string temp(symbol);
 			return get(temp);
 		};
+		*/
 
 		virtual std::string& string(){
 			throw std::logic_error("anserial: no string() method for type " + type());
@@ -58,6 +61,11 @@ class s_node {
 			return void_vec;
 		}
 
+		// type conversions, so we can do neato things with type inference
+		operator uint8_t() { return uint(); }
+		operator std::string&() { return string(); };
+
+		// type->string info for error/debugging output
 		const std::string& type(void) {
 			static const std::string types[] = {
 				"container", "symbol", "integer", "string",
@@ -83,8 +91,9 @@ class s_container : public s_node {
 		}
 
 		virtual s_node* get(uint32_t index) {
-			if (index > ents.size()) {
-				throw "out of range or something";
+			if (index >= ents.size()) {
+				throw std::out_of_range("s_container::get(uint32_t): invalid index "
+				                        + std::to_string(index));
 			}
 
 			return ents[index];
@@ -112,7 +121,7 @@ class s_map : public s_node {
 			}
 		}
 
-		virtual s_node* get(std::string& symbol){
+		virtual s_node* get(const std::string& symbol){
 			return entries[hash_string(symbol)];
 		}
 
