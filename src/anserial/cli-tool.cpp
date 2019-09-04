@@ -62,11 +62,11 @@ void decode_dump(void) {
 }
 
 void print_help(void) {
-	puts(
+	printf(
 		" -h : print this help and exit\n"
 		" -d : decode and dump serialized data from stdin\n"
-		" -e : serialize s-expressions from stdin"
-		" -t : generate some test data"
+		" -e : serialize s-expressions from stdin\n"
+		" -t : generate some test data\n"
 	);
 }
 
