@@ -241,6 +241,8 @@ uint32_t serializer::default_layout() {
 	return add_data(top);
 }
 
+// TODO: might be a good idea to split this up into a few
+//       mutually-recursive functions
 bool destructure(s_node *node, ent_int ent) {
 	if (!node) {
 		return false;
@@ -273,28 +275,45 @@ bool destructure(s_node *node, ent_int ent) {
 				return false;
 			}
 
-			printf("got here, %s\n", key.datas.s_str.c_str());
-
-			destructure(node->get(key.datas.s_str), pattern);
+			if (!destructure(node->get(key.datas.s_str), pattern)) {
+				return false;
+			}
 		}
+
+		return true;
 	}
 
 	else if (node->self.d_type == ent.d_type) {
-		// TODO: check for equality
-		return true;
+		switch (ent.d_type) {
+			case ENT_TYPE_INTEGER:
+				return node->uint() == ent.datas.i;
+
+			case ENT_TYPE_SYMBOL:
+				return node->uint() == hash_string(ent.datas.s_str);
+
+			case ENT_TYPE_STRING:
+				return node->string() == ent.datas.s_str;
+
+			default:
+				return false;
+		}
 	}
 
 	else if (node->self.d_type == ENT_TYPE_INTEGER
 	         && ent.d_type == ENT_TYPE_UINT_PTR)
 	{
-		*ent.datas.uptr = *node;
+		// FIXME: type conversions result in wrong but consistent results...
+		// TODO:  find out why, add test case once test framework is up
+		//*ent.datas.uptr = *node;
+		*ent.datas.uptr = node->uint();
 		return true;
 	}
 
 	else if (node->self.d_type == ENT_TYPE_STRING
 	         && ent.d_type == ENT_TYPE_STRING_PTR)
 	{
-		*ent.datas.sptr = (std::string)*node;
+		//*ent.datas.sptr = (std::string)*node;
+		*ent.datas.sptr = node->string();
 		return true;
 	}
 

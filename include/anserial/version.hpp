@@ -4,6 +4,6 @@
 namespace anserial {
 
 // semantic versioning, just in case
-static const struct { uint32_t major, minor, patch; } version = {0, 1, 0};
+static const struct { uint32_t major, minor, patch; } version = {0, 2, 0};
 
 }

@@ -70,6 +70,12 @@ void decode_dump(void) {
 		printf("; generator version: %u.%u.%u\n", major, minor, patch);
 		printf("; parser version: %u.%u.%u\n", version.major, version.minor, version.patch);
 	}
+
+	std::string blarg = "";
+
+	if (destructure(der.deserialize(), {"::symtab", {"::symtab", &blarg}})) {
+		printf("; symtab lookup test: \"%s\"\n", blarg.c_str());
+	}
 }
 
 void print_help(void) {

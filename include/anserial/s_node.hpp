@@ -62,6 +62,7 @@ class s_node {
 		}
 
 		// type conversions, so we can do neato things with type inference
+		// FIXME: type conversions result in wrong but consistent results...
 		operator uint8_t() { return uint(); }
 		operator std::string&() { return string(); };
 
