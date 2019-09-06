@@ -16,5 +16,7 @@ namespace anserial {
 // TODO: s_tree class
 void dump_nodes(s_node *node, unsigned indent);
 
+bool destructure(s_node *node, ent_int ents);
+
 // namespace anserial
 }

@@ -51,14 +51,25 @@ void decode_dump(void) {
 	s_tree foo(&der);
 	foo.dump_nodes();
 
+	/*
 	s_node *meh = der.deserialize();
 
 	uint32_t major = *(meh->get("::version")->get(0)->get(1));
 	uint32_t minor = *(meh->get("::version")->get(1)->get(1));
 	uint32_t patch = *(meh->get("::version")->get(2)->get(1));
+	*/
 
-	printf("; generator version: %u.%u.%u\n", major, minor, patch);
-	printf("; parser version: %u.%u.%u\n", version.major, version.minor, version.patch);
+	uint32_t major, minor, patch;
+
+	if (destructure(der.deserialize(),
+		{"::version",
+			{{"major", &major},
+			 {"minor", &minor},
+			 {"patch", &patch}}}))
+	{
+		printf("; generator version: %u.%u.%u\n", major, minor, patch);
+		printf("; parser version: %u.%u.%u\n", version.major, version.minor, version.patch);
+	}
 }
 
 void print_help(void) {

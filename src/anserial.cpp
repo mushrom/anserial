@@ -86,22 +86,32 @@ s_node *deserializer::deserialize(std::vector<uint32_t> datas) {
 	return deserialize(datas.data(), datas.size() / 2);
 }
 
-serializer::ent_int::ent_int(uint32_t i) {
+ent_int::ent_int(uint32_t i) {
 	d_type = ENT_TYPE_INTEGER;
 	datas.i = i;
 }
 
-serializer::ent_int::ent_int(std::string str) {
+ent_int::ent_int(std::string str) {
 	d_type = ENT_TYPE_SYMBOL;
 	datas.s_str = str;
 }
 
-serializer::ent_int::ent_int(const char *str) {
+ent_int::ent_int(uint32_t *an_uptr) {
+	d_type = ENT_TYPE_UINT_PTR;
+	datas.uptr = an_uptr;
+}
+
+ent_int::ent_int(std::string *an_sptr) {
+	d_type = ENT_TYPE_STRING_PTR;
+	datas.sptr = an_sptr;
+}
+
+ent_int::ent_int(const char *str) {
 	d_type = ENT_TYPE_SYMBOL;
 	datas.s_str = std::string(str);
 }
 
-serializer::ent_int::ent_int(std::initializer_list<serializer::ent_int> ents) {
+ent_int::ent_int(std::initializer_list<ent_int> ents) {
 	d_type = ENT_TYPE_CONTAINER;
 
 	datas.ents = ents;
@@ -229,6 +239,66 @@ uint32_t serializer::default_layout() {
 	uint32_t top = add_map(0);
 	add_version(top);
 	return add_data(top);
+}
+
+bool destructure(s_node *node, ent_int ent) {
+	if (!node) {
+		return false;
+	}
+
+	if (node->self.d_type == ENT_TYPE_CONTAINER
+		&& ent.d_type == ENT_TYPE_CONTAINER)
+	{
+		auto it = ent.datas.ents.begin();
+
+		for (unsigned i = 0; i < ent.datas.ents.size(); i++, it++) {
+			if (!destructure(node->get(i), *it)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	else if (node->self.d_type == ENT_TYPE_MAP
+	         && ent.d_type == ENT_TYPE_CONTAINER)
+	{
+		auto it = ent.datas.ents.begin();
+
+		while (it != ent.datas.ents.end()) {
+			ent_int key = *it++;
+			ent_int pattern = *it++;
+
+			if (key.d_type != ENT_TYPE_SYMBOL) {
+				return false;
+			}
+
+			printf("got here, %s\n", key.datas.s_str.c_str());
+
+			destructure(node->get(key.datas.s_str), pattern);
+		}
+	}
+
+	else if (node->self.d_type == ent.d_type) {
+		// TODO: check for equality
+		return true;
+	}
+
+	else if (node->self.d_type == ENT_TYPE_INTEGER
+	         && ent.d_type == ENT_TYPE_UINT_PTR)
+	{
+		*ent.datas.uptr = *node;
+		return true;
+	}
+
+	else if (node->self.d_type == ENT_TYPE_STRING
+	         && ent.d_type == ENT_TYPE_STRING_PTR)
+	{
+		*ent.datas.sptr = (std::string)*node;
+		return true;
+	}
+
+	return false;
 }
 
 /*

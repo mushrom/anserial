@@ -7,6 +7,37 @@
 
 namespace anserial {
 
+enum {
+	ENT_TYPE_UINT_PTR = 0xcafe,
+	ENT_TYPE_STRING_PTR,
+};
+
+// TODO: move this to it's own header, better naming
+// allows for neat ergonomic syntax, but a bit slower
+class ent_int {
+	public:
+		ent_int(uint32_t i);
+		ent_int(std::string str);
+		ent_int(const char* str);
+		ent_int(std::list<ent_int> ents);
+		ent_int(std::initializer_list<ent_int> ents);
+
+		ent_int(uint32_t *an_uptr);
+		ent_int(std::string *an_strptr);
+
+		uint32_t id;
+		uint32_t d_type;
+
+		struct {
+			uint32_t i;
+			uint32_t *uptr;
+			std::string *sptr;
+			std::string s_str;
+			std::initializer_list<ent_int> ents;
+		} datas;
+};
+
+
 class serializer {
 	public:
 		std::vector<uint32_t> output;
@@ -38,25 +69,6 @@ class serializer {
 		// TODO: output callback function, so we can write data as it's being serialized
 		//       without buffering the full output
 		std::vector<uint32_t> serialize() { return output; };
-
-		// allows for neat ergonomic syntax, but a bit slower
-		class ent_int {
-			public:
-				ent_int(uint32_t i);
-				ent_int(std::string str);
-				ent_int(const char* str);
-				ent_int(std::list<ent_int> ents);
-				ent_int(std::initializer_list<ent_int> ents);
-
-				uint32_t id;
-				uint32_t d_type;
-
-				struct {
-					uint32_t i;
-					std::string s_str;
-					std::initializer_list<ent_int> ents;
-				} datas;
-		};
 
 		uint32_t add_entities(uint32_t parent, ent_int);
 		uint32_t add_map_entry(uint32_t parent,
