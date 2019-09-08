@@ -5,11 +5,14 @@
 #include <string>
 #include <list>
 
+#include <anserial/s_node.hpp>
+
 namespace anserial {
 
 enum {
 	ENT_TYPE_UINT_PTR = 0xcafe,
 	ENT_TYPE_STRING_PTR,
+	ENT_TYPE_NODE_PTR,
 };
 
 // TODO: move this to it's own header, better naming
@@ -24,19 +27,21 @@ class ent_int {
 
 		ent_int(uint32_t *an_uptr);
 		ent_int(std::string *an_strptr);
+		ent_int(s_node **an_nptr);
 
 		uint32_t id;
 		uint32_t d_type;
 
 		struct {
-			uint32_t i;
 			uint32_t *uptr;
 			std::string *sptr;
+			s_node **nptr;
+
+			uint32_t i;
 			std::string s_str;
 			std::initializer_list<ent_int> ents;
 		} datas;
 };
-
 
 class serializer {
 	public:

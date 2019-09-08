@@ -76,6 +76,21 @@ void decode_dump(void) {
 	if (destructure(der.deserialize(), {"::symtab", {"::symtab", &blarg}})) {
 		printf("; symtab lookup test: \"%s\"\n", blarg.c_str());
 	}
+
+	s_node *lol;
+
+	if (destructure(der.deserialize(), {"::data", {{{}, {}, &lol}}})) {
+		foo.dump_nodes(lol);
+
+		uint32_t i_19937, i_2048;
+		if (destructure(lol,
+			{"results",
+				{"i-19937", &i_19937},
+				{"i-2048", &i_2048}}))
+		{
+			printf("test results: i-19937: %u, i-2048: %u\n", i_19937, i_2048);
+		}
+	}
 }
 
 void print_help(void) {

@@ -106,6 +106,11 @@ ent_int::ent_int(std::string *an_sptr) {
 	datas.sptr = an_sptr;
 }
 
+ent_int::ent_int(s_node **an_nptr) {
+	d_type = ENT_TYPE_NODE_PTR;
+	datas.nptr = an_nptr;
+}
+
 ent_int::ent_int(const char *str) {
 	d_type = ENT_TYPE_SYMBOL;
 	datas.s_str = std::string(str);
@@ -244,11 +249,20 @@ uint32_t serializer::default_layout() {
 // TODO: might be a good idea to split this up into a few
 //       mutually-recursive functions
 bool destructure(s_node *node, ent_int ent) {
-	if (!node) {
+	if (ent.d_type == ENT_TYPE_NODE_PTR) {
+		if (ent.datas.nptr) {
+			*ent.datas.nptr = node;
+		}
+
+		// TODO: should we really return true in all cases?
+		return true;
+	}
+
+	else if (!node) {
 		return false;
 	}
 
-	if (node->self.d_type == ENT_TYPE_CONTAINER
+	else if (node->self.d_type == ENT_TYPE_CONTAINER
 		&& ent.d_type == ENT_TYPE_CONTAINER)
 	{
 		auto it = ent.datas.ents.begin();
