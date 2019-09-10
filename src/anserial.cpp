@@ -43,7 +43,7 @@ uint32_t hash_string(const std::string& str) {
 }
 
 s_node *deserializer::deserialize() {
-	return nodes[0];
+	return (nodes.size() > 0)? nodes[0] : nullptr;
 }
 
 s_node *deserializer::deserialize(uint32_t *datas, size_t entities) {

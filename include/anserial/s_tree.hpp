@@ -12,6 +12,9 @@ class s_tree {
 		s_tree(s_node *node);
 		s_tree(deserializer* nder);
 
+		// metadata accessors
+		s_node *data();
+
 		s_node *lookup(std::string& symbol);
 		s_node *lookup(uint32_t hash);
 
@@ -25,14 +28,16 @@ class s_tree {
 		// TODO: should use a smart pointer here
 		deserializer *der = nullptr;
 
-		// top-level node
-		s_node *top = nullptr;
-		// map node with symbol info
-		s_node *symtab = nullptr;
-		// generator version
-		s_node *version = nullptr;
-		// main content
-		s_node *data = nullptr;
+		struct {
+			// top-level node
+			s_node *top;
+			// map node with symbol info
+			s_node *symtab;
+			// generator version
+			s_node *version;
+			// main content
+			s_node *data;
+		} cached = {nullptr, nullptr, nullptr, nullptr};
 };
 
 // namespace anserial

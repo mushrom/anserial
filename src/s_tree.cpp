@@ -8,7 +8,7 @@ s_tree::s_tree() {
 }
 
 s_tree::s_tree(s_node *node) {
-	top = node;
+	cached.top = node;
 	refresh();
 }
 
@@ -17,32 +17,38 @@ s_tree::s_tree(deserializer* nder) {
 	refresh();
 }
 
+s_node *s_tree::data() {
+	// if the data is formatted in the default anserial format,
+	// then this returns the ::data entity
+	return cached.data? cached.data : cached.top;
+}
+
 s_node *s_tree::lookup(std::string& symbol) {
 	return lookup(hash_string(symbol));
 }
 
 s_node *s_tree::lookup(uint32_t hash) {
-	if (symtab) {
-		return symtab->get(hash);
+	if (cached.symtab) {
+		return cached.symtab->get(hash);
 	}
 
 	return nullptr;
 }
 
 void s_tree::refresh(void) {
-	if (!top && der) {
-		top = der->deserialize();
+	if (!cached.top && der) {
+		cached.top = der->deserialize();
 	}
 
-	if (top && top->self.d_type == ENT_TYPE_MAP) {
-		symtab = top->get("::symtab");
-		version = top->get("::version");
-		data = top->get("::data");
+	if (cached.top && cached.top->self.d_type == ENT_TYPE_MAP) {
+		cached.symtab = cached.top->get("::symtab");
+		cached.version = cached.top->get("::version");
+		cached.data = cached.top->get("::data");
 	}
 }
 
 void s_tree::dump_nodes(void) {
-	dump_nodes(top, 0);
+	dump_nodes(cached.top, 0);
 }
 
 void s_tree::dump_nodes(s_node *node, unsigned indent) {
