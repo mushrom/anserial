@@ -268,7 +268,11 @@ bool destructure(s_node *node, ent_int ent) {
 		auto it = ent.datas.ents.begin();
 
 		for (unsigned i = 0; i < ent.datas.ents.size(); i++, it++) {
-			if (!destructure(node->get(i), *it)) {
+			// continue trying to match if we extend past the end of the container,
+			// so that ENT_TYPE_NODE_PTR types can match with null pointers.
+			s_node *next = (i < node->entities().size())? node->get(i) : nullptr;
+
+			if (!destructure(next, *it)) {
 				return false;
 			}
 		}
