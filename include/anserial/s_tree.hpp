@@ -8,6 +8,10 @@ namespace anserial {
 class s_tree {
 	public:
 		// TODO: smarter pointers
+		~s_tree() {
+			delete cached.top;
+		}
+
 		s_tree();
 		s_tree(s_node *node);
 		s_tree(deserializer* nder);
