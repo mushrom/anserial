@@ -19,7 +19,10 @@ all: dirtree libs bin tests examples
 dirtree: $(BUILD)
 
 $(BUILD):
-	mkdir -p $(BUILD)/{bin,lib,obj,test}
+	mkdir -p $(BUILD)/bin
+	mkdir -p $(BUILD)/lib
+	mkdir -p $(BUILD)/obj
+	mkdir -p $(BUILD)/test
 
 .PHONY: tests
 tests: $(BUILD)/bin/anserial
